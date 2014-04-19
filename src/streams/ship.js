@@ -1,8 +1,10 @@
 var concat = require('concat-stream');
 var through = require('through2');
 
+// the front-end ship handler
+// the contract is the body
 module.exports = function(api){
-	return function(req){
+	return function(req, res){
 
 		// the response stream
 		var res = through.obj(function(chunk, enc, cb){

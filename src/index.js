@@ -2,10 +2,8 @@ var EventEmitter = require('events').EventEmitter
 var util = require('digger-utils')
 var api = require('./api')
 
-function Server(db){
+function Server(){
 	EventEmitter.call(this)
-	this._db = db
-	this._middleware = []
 }
 
 util.inherits(Server, EventEmitter)
@@ -16,9 +14,10 @@ Server.prototype.reception = function(req, res){
 	api(req).pipe(res)
 }
 
-module.exports = function(leveldb){
-	if(!leveldb){
-		throw new Error('db required')
-	}
-	return new Server(leveldb)
+Server.prototype.use = function(route, warehouse){
+	api.warehouses.use(route, warehouse)
+}
+
+module.exports = function(){
+	return new Server()
 }

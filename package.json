@@ -23,15 +23,14 @@
   "devDependencies": {
     "mocha": "~1.14.0",
     "should": "~2.1.0",
-    "digger-client": "^2.1.2",
-    "level": "^0.18.0",
-    "wrench": "^1.5.8"
+    "digger-client": "^2.1.2"
   },
   "dependencies": {
     "digger-utils": "^2.0.1",
     "concat-stream": "^1.4.5",
     "through2": "^0.4.1",
     "from2": "0.0.0",
-    "streamworks": "^0.1.4"
+    "streamworks": "^0.1.4",
+    "routes": "^1.1.0"
   }
 }

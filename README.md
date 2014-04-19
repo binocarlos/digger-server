@@ -18,12 +18,19 @@ You create a digger database by passing in an existing [leveldb](https://github.
 You can either use the api directly or mount a HTTP handler.
 
 ```js
-var Server = require('digger-server');
-var level = require('level');
-var http = require('http');
+var Digger = require('digger-server')
+var Level = require('level-digger')
 
+var http = require('http')
+
+var digger = Server(leveldb);
+
+digger.use()
+
+
+var level = require('level');
 var leveldb = level('/tmp/diggertest');
-var diggerdb = Server(leveldb);
+
 
 var server = http.createServer(diggerdb.httpHandler());
 
