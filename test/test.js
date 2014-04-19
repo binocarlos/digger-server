@@ -57,8 +57,13 @@ describe('diggerserver', function(){
 
       var contract = warehouse.append(data)
 
-      warehouse.append(data).ship(function(){
+      warehouse.append(data).ship(function(answers){
+
+        process.exit();
+
         warehouse('folder.red').ship(function(folder){
+
+
           folder.count().should.equal(1);
           done();
         })

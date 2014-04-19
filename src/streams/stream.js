@@ -1,7 +1,7 @@
 var tools = require('../tools')
 
 module.exports = function(api){
-	return function(req, res){
+	return function(req){
 
 		// collect the contract which is encoded in the HTTP header
 		var contract = req.headers['x-digger-contract']
@@ -10,9 +10,8 @@ module.exports = function(api){
 			contract = JSON.parse(contract)
 		}
 
-		console.log('-------------------------------------------');
-		console.log('stream');
 		tools.recurseStreamContract(contract)
 
+		return req.pipe(api.convert(contract))
 	}
 }
