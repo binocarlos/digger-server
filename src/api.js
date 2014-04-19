@@ -1,22 +1,16 @@
-var api = {
-	'/ship':require('./streams/ship'),
-	'/stream':function(req, res){
-
-	},
-	'/merge':function(req, res){
-		
-	},
-	'/pipe':function(req, res){
-		
-	},
-	'/select':function(req, res){
-
-	},
-	'/data':function(req, res){
-
-	}
+function factory(req){
+	var fn = fns[req.url] || fns['/data']
+	var stream = fn(req)
+	stream._api = req.url
+	return stream
 }
 
-module.exports = function(url){
-	return api[url] || api['/data']
+var fns = {
+	'/ship':require('./streams/ship')(factory),
+	'/stream':require('./streams/stream')(factory),
+	'/data':require('./streams/data')(factory)
 }
+
+factory.convert = require('./convertcontract')(factory)
+
+module.exports = factory

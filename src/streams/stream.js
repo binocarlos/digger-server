@@ -1,26 +1,18 @@
-var concat = require('concat-stream');
-var through = require('through');
 var tools = require('../tools')
 
-module.exports = function(req, res){
+module.exports = function(api){
+	return function(req, res){
 
-	// collect the contract which is encoded in the HTTP header
-	var contract = req.headers['x-digger-contract']
+		// collect the contract which is encoded in the HTTP header
+		var contract = req.headers['x-digger-contract']
 
-	if(typeof(contract)==='string'){
-		contract = JSON.parse(contract)
+		if(typeof(contract)==='string'){
+			contract = JSON.parse(contract)
+		}
+
+		console.log('-------------------------------------------');
+		console.log('stream');
+		tools.recurseStreamContract(contract)
+
 	}
-
-	tools.recurseStreamContract(contract)
-
-	req.pipe(concat(function(contract){
-		
-		contract = contract[0]
-
-		console.log('-------------------------------------------');
-		console.log('-------------------------------------------');
-		
-		console.log(JSON.stringify(contract, null, 4));
-		process.exit();
-	}))
 }

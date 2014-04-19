@@ -13,8 +13,7 @@ util.inherits(Server, EventEmitter)
 // main api entry point
 // req should be converted already by the transport
 Server.prototype.reception = function(req, res){
-	var streamfn = api(req.url)
-	streamfn(req, req, res)
+	api(req).pipe(res)
 }
 
 module.exports = function(leveldb){

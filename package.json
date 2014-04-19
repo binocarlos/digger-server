@@ -31,6 +31,9 @@
     "wrench": "^1.5.8",
     "concat-stream": "^1.4.5",
     "through": "^2.3.4",
-    "digger-utils": "^2.0.1"
+    "digger-utils": "^2.0.1",
+    "from": "^0.1.3",
+    "streamworks": "^0.1.4",
+    "lib-stream-future": "^0.1.2"
   }
 }
