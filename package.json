@@ -1,0 +1,36 @@
+{
+  "name": "digger-server",
+  "version": "0.0.1",
+  "description": "LevelDB backed digger warehouse",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "make test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/binocarlos/digger-server.git"
+  },
+  "keywords": [
+    "digger",
+    "server"
+  ],
+  "author": "Kai Davenport",
+  "license": "MIT",
+  "readmeFilename": "README.md",
+  "bugs": {
+    "url": "https://github.com/binocarlos/digger-server/issues"
+  },
+  "devDependencies": {
+    "mocha": "~1.14.0",
+    "should": "~2.1.0",
+    "digger-client": "^2.1.2"
+  },
+  "dependencies": {
+    "level": "^0.18.0",
+    "event-stream": "^3.1.1",
+    "wrench": "^1.5.8",
+    "concat-stream": "^1.4.5",
+    "through": "^2.3.4",
+    "digger-utils": "^2.0.1"
+  }
+}
