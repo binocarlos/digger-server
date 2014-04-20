@@ -1,13 +1,33 @@
-var through = require('through2');
-var Router = require('routes');
+var through = require('through2')
+var Router = require('routes')
+var Selector = require('digger-selector')
 var router = new Router();
 
 function apiwrapper(api){
 	return function(req){
 		var handler = api[req.method]
 		if(!handler){
-			throw new Error('no handler found for method: ' + req.method + ' ' + req.url)
+			throw new Error('no handler found for method: ' + req.method + ' ' + req.url)	
 		}
+
+		// process selector strings
+		if(req.method=='get'){
+			var query = req.query || {}
+			var queryselector = query.selector || query.s
+			var headerselector = req.headers['x-digger-selector']
+
+			var selector = queryselector || headerselector
+
+			if(typeof(selector)==='string'){
+				selector = Selector(selector)
+				if(selector && selector.phases && selector.phases.length>0){
+					selector = selector.phases[0][0]
+				}
+			}
+
+			req.headers['x-digger-selector'] = selector
+		}
+		
 		return handler(req)
 	}
 }

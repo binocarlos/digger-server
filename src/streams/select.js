@@ -8,21 +8,25 @@ var streamworks = require('streamworks')
 module.exports = function(api){
 
 	// load from a single node with a single selector step
-	function selectorPathStream(step, path){
+	function selectorPathStream(step, path, laststep){
+		var headers = {
+			'x-digger-selector':step
+		}
+		if(laststep){
+			headers['x-digger-laststep'] = true
+		}
 		return api({
 			method:'get',
 			url:path,
-			headers:{
-				'x-digger-selector':step
-			}
+			headers:headers
 		})
 	}
 
 	// create a stream for a single selector step - multiple node ids will be piped in
-	function selectorStepStream(step){
+	function selectorStepStream(step, laststep){
 
 		var stream = through.obj(function(path, enc, cb){
-			var pathStream = selectorPathStream(step, path)
+			var pathStream = selectorPathStream(step, path, laststep)
 
 			pathStream.pipe(stream)
 		})
@@ -35,10 +39,12 @@ module.exports = function(api){
 	// the input is the starting contexts
 	function selectorPhaseStream(phase){
 		if(phase.length>1){
-			return streamworks.pipe(phase.map(selectorStepStream))
+			return streamworks.pipe(phase.map(function(step, index){
+				return selectorStepStream(step, index==phase.length-1)
+			}))
 		}
 		else{
-			return selectorStepStream(phase[0])
+			return selectorStepStream(phase[0], true)
 		}
 	}
 
