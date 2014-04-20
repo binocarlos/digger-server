@@ -4,7 +4,7 @@ var through = require('through2');
 // the front-end ship handler
 // the contract is the body
 module.exports = function(api){
-	return function(req, res){
+	return function(req){
 
 		// the response stream
 		var res = through.obj(function(chunk, enc, cb){

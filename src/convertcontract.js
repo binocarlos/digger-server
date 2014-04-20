@@ -6,7 +6,7 @@ var tools = require('./tools')
 // if a contract is not merge or pipe and has a body - the body
 // will become the input stream for that contract (and not the main input)
 module.exports = function(api){
-	return function factory(req, res){
+	return function factory(req){
 		// create a streamworks
 		if(req.url=='/merge' || req.url=='/pipe'){
 			var streams = req.body.map(function(c){
@@ -27,7 +27,7 @@ module.exports = function(api){
 
 			delete(req.body)
 
-			var stream = api(req, res)
+			var stream = api(req)
 
 			// create a fake pipe with the source data ignoring the input
 			if(body){

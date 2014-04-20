@@ -23,7 +23,8 @@
   "devDependencies": {
     "mocha": "~1.14.0",
     "should": "~2.1.0",
-    "digger-client": "^2.1.2"
+    "digger-client": "^2.1.2",
+    "through2": "^0.4.1"
   },
   "dependencies": {
     "digger-utils": "^2.0.1",
@@ -31,6 +32,8 @@
     "through2": "^0.4.1",
     "from2": "0.0.0",
     "streamworks": "^0.1.4",
-    "routes": "^1.1.0"
+    "routes": "^1.1.0",
+    "level-sublevel": "^5.2.0",
+    "level-test": "^1.6.2"
   }
 }

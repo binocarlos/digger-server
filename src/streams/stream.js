@@ -3,7 +3,7 @@ var tools = require('../tools')
 // the front-end stream handler
 // the contract lives the in header
 module.exports = function(api){
-	return function(req, res){
+	return function(req){
 
 		var contract = req.headers['x-digger-contract']
 

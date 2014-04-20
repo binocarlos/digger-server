@@ -1,10 +1,12 @@
 var Server = require('../src');
 var Client = require('digger-client');
 var through = require('through2')
-/*
-var level = require('level');
-var wrench = require('wrench');
-*/
+
+var level    = require('level-test')()
+var sub = require('level-sublevel')
+
+var diggerlevel = require('digger-level')
+var db = sub(level('level-search--diggerserver', {encoding: 'json'}))
 
 describe('diggerserver', function(){
 /*
@@ -85,21 +87,14 @@ describe('diggerserver', function(){
 
   })
 
-  describe('append and find data', function(){
+  describe('append and find data to a digger level', function(){
 
     it('should append some data', function(done){
 
       var digger = Server();
       var client = Client();
 
-      digger.use(function(req, res){
-        return through.obj(function(chunk, env, cb){
-          this.push({
-            name:'test'
-          })
-          cb()
-        })
-      })
+      digger.use(diggerlevel(db))
 
       client.on('request', digger.reception.bind(digger));
 
