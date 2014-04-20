@@ -2,6 +2,7 @@ var concat = require('concat-stream')
 var through = require('through2')
 var Selector = require('digger-selector')
 var streamworks = require('streamworks')
+var duplexer = require('reduplexer')
 
 // the front-end ship handler
 // the contract is the body
@@ -25,13 +26,18 @@ module.exports = function(api){
 	// create a stream for a single selector step - multiple node ids will be piped in
 	function selectorStepStream(step, laststep){
 
-		var stream = through.obj(function(path, enc, cb){
-			var pathStream = selectorPathStream(step, path, laststep)
+		var output = through.obj()
 
-			pathStream.pipe(stream)
+		var input = through.obj(function(path, topenc, topcb){
+
+			selectorPathStream(step, path, laststep)
+				.pipe(output)
+
 		})
 
-		return stream;
+		return duplexer(input, output, {
+			objectMode:true
+		})
 	}
 
 	// create a stream for a selector phase of steps
