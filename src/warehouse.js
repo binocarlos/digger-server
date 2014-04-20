@@ -6,7 +6,7 @@ function apiwrapper(api){
 	return function(req){
 		var handler = api[req.method]
 		if(!handler){
-			return errorstream('no handler found for method: ' + req.method + ' ' + req.url)
+			throw new Error('no handler found for method: ' + req.method + ' ' + req.url)
 		}
 		return handler(req)
 	}

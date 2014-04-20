@@ -11,6 +11,7 @@ function factory(req){
 
 var fns = {
 	'/ship':require('./streams/ship')(factory),
+	'/select':require('./streams/select')(factory),
 	'/stream':require('./streams/stream')(factory),
 	'/warehouse':require('./warehouse')(factory)
 }

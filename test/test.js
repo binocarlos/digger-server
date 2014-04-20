@@ -2,31 +2,8 @@ var Server = require('../src');
 var Client = require('digger-client');
 var through = require('through2')
 
-var level    = require('level-test')()
-var sub = require('level-sublevel')
-
-var diggerlevel = require('digger-level')
-var db = sub(level('level-search--diggerserver', {encoding: 'json'}))
-
 describe('diggerserver', function(){
-/*
-  var leveldb;
 
-  beforeEach(function(done){
-    this.timeout(1000);
-    wrench.rmdirSyncRecursive('/tmp/diggertestdb', true);
-    level('/tmp/diggertestdb', {}, function(err, ldb){
-      if (err) throw err
-      leveldb = ldb
-      done();
-    });
-  })
-
-  afterEach(function(done){
-    this.timeout(1000);
-    leveldb.close(done);
-  })
-*/
   describe('constructor', function(){
   
     it('should be a function', function(){
@@ -81,42 +58,6 @@ describe('diggerserver', function(){
 
         done();
         
-      })
-
-    })
-
-  })
-
-  describe('append and find data to a digger level', function(){
-
-    it('should append some data', function(done){
-
-      var digger = Server();
-      var client = Client();
-
-      digger.use(diggerlevel(db))
-
-      client.on('request', digger.reception.bind(digger));
-
-      var warehouse = client.connect('/apples');
-
-      var data = client.create('folder').addClass('red');
-
-      var contract = warehouse.append(data)
-
-      warehouse.append(data).ship(function(answers){
-
-        console.log('-------------------------------------------');
-        console.dir(answers.toJSON());
-
-        process.exit();
-
-        warehouse('folder.red').ship(function(folder){
-
-
-          folder.count().should.equal(1);
-          done();
-        })
       })
 
     })

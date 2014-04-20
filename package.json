@@ -34,6 +34,7 @@
     "streamworks": "^0.1.4",
     "routes": "^1.1.0",
     "level-sublevel": "^5.2.0",
-    "level-test": "^1.6.2"
+    "level-test": "^1.6.2",
+    "digger-selector": "^0.2.0"
   }
 }
