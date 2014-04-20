@@ -16,6 +16,7 @@ module.exports = function(api){
 		if(laststep){
 			headers['x-digger-laststep'] = true
 		}
+		
 		return api({
 			method:'get',
 			url:path,
@@ -28,10 +29,24 @@ module.exports = function(api){
 
 		var output = through.obj()
 
-		var input = through.obj(function(path, topenc, topcb){
+		// trigger an end on the duplex when all the query streams are done
+		var streamsOpen = 0
 
+		var input = through.obj(function(path, topenc, topcb){
+			
+			streamsOpen++
 			selectorPathStream(step, path, laststep)
-				.pipe(output)
+				.pipe(through.obj(function(chunk, topenc, cb){
+					output.push(chunk)
+					cb()
+				}, function(){
+					streamsOpen--
+					if(streamsOpen<=0){
+						output.push(null)
+					}
+				}))
+
+			topcb()
 
 		})
 
