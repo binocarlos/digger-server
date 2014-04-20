@@ -9,9 +9,12 @@ var duplexer = require('reduplexer')
 module.exports = function(api){
 
 	// load from a single node with a single selector step
-	function selectorPathStream(step, path, laststep){
+	function selectorPathStream(selector, path, laststep){
+		console.log('-------------------------------------------');
+		console.log('make warehouse');
+		console.dir(path);
 		var headers = {
-			'x-digger-selector':step
+			'x-digger-selector':selector
 		}
 		if(laststep){
 			headers['x-digger-laststep'] = true
@@ -32,11 +35,14 @@ module.exports = function(api){
 		// trigger an end on the duplex when all the query streams are done
 		var streamsOpen = 0
 
-		var input = through.obj(function(path, topenc, topcb){
-			
-			streamsOpen++
-			selectorPathStream(step, path, laststep)
+		// the open warehouse stream by their base resolved url
+		var streams = {}
+
+		function makeStream(path){
+			var s = selectorPathStream(step, path, laststep)
 				.pipe(through.obj(function(chunk, topenc, cb){
+					console.log('-------------------------------------------');
+					console.log('have answer');
 					output.push(chunk)
 					cb()
 				}, function(){
@@ -45,9 +51,17 @@ module.exports = function(api){
 						output.push(null)
 					}
 				}))
+			return s
+		}
 
-			topcb()
-
+		var input = through.obj(function(path, enc, cb){
+			var base = api.warehouses.resolve(path)
+			if(!streams[base]){
+				streamsOpen++
+				streams[base] = makeStream(base)
+			}
+			streams[base].push(path)
+			cb()
 		})
 
 		return duplexer(input, output, {

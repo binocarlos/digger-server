@@ -1,7 +1,7 @@
 var through = require('through2')
 var Router = require('routes')
 var Selector = require('digger-selector')
-var router = new Router();
+
 
 function apiwrapper(api){
 	return function(req){
@@ -38,6 +38,8 @@ function apiwrapper(api){
 // it accepts a req and returns a duplex stream
 module.exports = function(api){
 
+	var router = new Router();
+
 	function warehouse(req){
 		req.url = req.url.substr('/warehouse'.length)
 
@@ -54,6 +56,12 @@ module.exports = function(api){
 				cb('warehouse not found: ' + req.url)
 			})
   	}
+	}
+
+	// turn a route into the warehouse it would match
+	warehouse.resolve = function(route){
+		var match = router.match(route)
+		return match ? match.route : '/'
 	}
 
 	warehouse.use = function(route, fn){
