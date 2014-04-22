@@ -22,25 +22,41 @@ module.exports = function(api){
 			url:'/warehouse',
 			headers:headers
 		})
-		var output = query.filter || through.obj()
-		var open = 0
-		var input = through.obj(function(chunk, enc, nextinput){
+		return through.obj(function(chunk, enc, nextinput){
 			var self = this;
-			open++
-			var results = query.select(chunk)
+			query(chunk)
+				.pipe(through.obj(function(chunk, enc, cb){
+					this.push(chunk)
+					cb()
+				}))
+				.pipe(through.obj(function(chunk, enc, cb){
+					console.log('-------------------------------------------');
+					console.dir(chunk);
+					self.push(chunk)
+					cb()
+				}, function(){
+					console.log('-------------------------------------------');
+					console.log('-------------------------------------------');
+					console.log('FIN');
+					nextinput()		
+				}))
+/*
 			results.on('end', function(){
 				open--
 				if(open<=0){
-					output.end()
+					//output.push()
 				}
 			})
-			results.pipe(output, {end:false})
-			nextinput()
+			results.pipe(through.obj(function(chunk, enc, cb){
+				this.push(chunk)
+				cb()
+			}))
+			nextinput()*/
 		})
-
+/*
 		return duplexer(input, output, {
 			objectMode:true
-		})
+		})*/
 	}
 
 	// create a stream for a selector phase of steps
