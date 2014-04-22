@@ -25,36 +25,21 @@ module.exports = function(api){
 	}
 
 	function selectorMultiStream(selector, laststep){
-		var factory = queryFactory(selector, laststep)
-
-		var output = through.obj()
-
+		var query = queryFactory(selector, laststep)
+		var output = query.filter || through.obj()
+		var open = 0
 		var input = through.obj(function(chunk, enc, nextinput){
 			var self = this;
-			console.log('run query');
-			console.dir(chunk);
-			console.dir(selector);
-
-			factory(chunk)
-				//.pipe(filter)
-				.pipe(through.obj(function(chunk, enc, cb){
-					console.log('result: ' + selector.tag);
-					console.dir(chunk);
-					output.push(chunk)
-					cb()
-				}, function(){
-					console.log('-------------------------------------------');
-					console.log('-------------------------------------------');
-					console.log(chunk);
-					console.dir(selector.tag);
-					console.log('search finished');
-					nextinput()
-				}))
-		}, function(){
-			console.log('-------------------------------------------');
-			console.log('-------------------------------------------');
-			console.log('pipeline finished');
-			output.push(null)
+			open++
+			var results = query.select(chunk)
+			results.on('end', function(){
+				open--
+				if(open<=0){
+					output.end()
+				}
+			})
+			results.pipe(output, {end:false})
+			nextinput()
 		})
 
 		return duplexer(input, output, {
@@ -70,30 +55,8 @@ module.exports = function(api){
 			var selectorStreams = phase.map(function(step, index){
 				return selectorMultiStream(step, index==phase.length-1)
 			})
-
 			var query = streamworks.pipeObjects(selectorStreams)
-
-			return query/*
-			var r = []
-
-			var filter = through.obj(function(chunk, enc, cb){
-				r.push(chunk)
-				console.log('After Qiuer PIPE');
-				console.dir(chunk);
-				this.push(chunk)	
-				cb()
-			}, function(){
-				console.log('-------------------------------------------');
-				console.log('-------------------------------------------');
-				console.log('query pupe ended');
-				console.dir(r);
-			})
-
-			query.pipe(filter)
-
-			return duplexer(query, filter, {
-				objectMode:true
-			})*/
+			return query
 		}
 		else{
 			return selectorStepStream(phase[0], true)
