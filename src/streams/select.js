@@ -10,22 +10,18 @@ var cascade = require('group-cascade-stream')
 module.exports = function(api){
 
 	// create a stream for a single selector step - multiple node ids will be piped in
-	function queryFactory(selector, laststep){
+	function selectorMultiStream(selector, laststep){
 		var headers = {
 			'x-digger-selector':selector
 		}
 		if(laststep){
 			headers['x-digger-laststep'] = true
 		}
-		return api({
+		var query = api({
 			method:'get',
 			url:'/warehouse',
 			headers:headers
 		})
-	}
-
-	function selectorMultiStream(selector, laststep){
-		var query = queryFactory(selector, laststep)
 		var output = query.filter || through.obj()
 		var open = 0
 		var input = through.obj(function(chunk, enc, nextinput){
@@ -59,7 +55,7 @@ module.exports = function(api){
 			return query
 		}
 		else{
-			return selectorStepStream(phase[0], true)
+			return selectorMultiStream(phase[0], true)
 		}
 	}
 
