@@ -9,8 +9,8 @@ var cascade = require('group-cascade-stream')
 // the contract is the body
 module.exports = function(api){
 
-	// a designated warehouse selector stream
-	function warehouseQueryFactory(warehouse, selector, laststep){
+	// create a stream for a single selector step - multiple node ids will be piped in
+	function queryFactory(selector, laststep){
 		var headers = {
 			'x-digger-selector':selector
 		}
@@ -19,51 +19,42 @@ module.exports = function(api){
 		}
 		return api({
 			method:'get',
-			url:warehouse,
+			url:'/warehouse',
 			headers:headers
 		})
 	}
 
-	// create a stream for a single selector step - multiple node ids will be piped in
-	function selectorStepStream(selector, laststep){
+	function selectorMultiStream(selector, laststep){
+		var factory = queryFactory(selector, laststep)
 
-		var inputopen = true
-		var warehousesopen = 0
-		var warehouses = {}
-		
 		var output = through.obj()
 
-		var input = through.obj(function(chunk, enc, nextid){
+		var input = through.obj(function(chunk, enc, nextinput){
+			var self = this;
+			console.log('run query');
+			console.dir(chunk);
+			console.dir(selector);
 
-			console.log('-------------------------------------------');
-			console.dir('input: ' + chunk);
-			console.dir(selector.tag);
-			var warehouseid = api.warehouse.resolve(chunk)
-
-			var warehouse = warehouses[warehouseid]
-			if(!warehouse){
-				warehouse = warehouses[warehouseid] = warehouseQueryFactory(warehouseid, selector, laststep)
-				warehousesopen++
-			}
-
-			var stream = warehouse(chunk)
-
-			stream.pipe(output, {end:false})
-
-			stream.on('end', function(){
-				warehousesopen--
-				if(!inputopen && warehousesopen<=0){
+			factory(chunk)
+				//.pipe(filter)
+				.pipe(through.obj(function(chunk, enc, cb){
+					console.log('result: ' + selector.tag);
+					console.dir(chunk);
+					output.push(chunk)
+					cb()
+				}, function(){
 					console.log('-------------------------------------------');
-					console.log('warehouse end');
-					output.push()
-				}
-				
-			})
-
-			nextid()
-
+					console.log('-------------------------------------------');
+					console.log(chunk);
+					console.dir(selector.tag);
+					console.log('search finished');
+					nextinput()
+				}))
 		}, function(){
-			inputopen = false
+			console.log('-------------------------------------------');
+			console.log('-------------------------------------------');
+			console.log('pipeline finished');
+			output.push(null)
 		})
 
 		return duplexer(input, output, {
@@ -76,37 +67,33 @@ module.exports = function(api){
 	// the input is the starting contexts
 	function selectorPhaseStream(phase){
 		if(phase.length>1){
-
-			var start = selectorStepStream(phase[0])
-
-			var middle = through.obj(function(chunk, enc, cb){
-				console.log('-------------------------------------------');
-				console.log('first result');
-				console.dir(chunk);
-				this.push(chunk)
-				cb()
+			var selectorStreams = phase.map(function(step, index){
+				return selectorMultiStream(step, index==phase.length-1)
 			})
 
-			var second = selectorStepStream(phase[1], true)
+			var query = streamworks.pipeObjects(selectorStreams)
 
-			var end = through.obj(function(chunk, enc, cb){
-				console.log('-------------------------------------------');
-				console.log('second result');
+			return query/*
+			var r = []
+
+			var filter = through.obj(function(chunk, enc, cb){
+				r.push(chunk)
+				console.log('After Qiuer PIPE');
 				console.dir(chunk);
-				this.push(chunk)
+				this.push(chunk)	
 				cb()
+			}, function(){
+				console.log('-------------------------------------------');
+				console.log('-------------------------------------------');
+				console.log('query pupe ended');
+				console.dir(r);
 			})
 
-			start.pipe(middle).pipe(second).pipe(end)
+			query.pipe(filter)
 
-			return duplexer(start, end, {
+			return duplexer(query, filter, {
 				objectMode:true
-			})
-			/*
-			return streamworks.pipeObjects(phase.map(function(step, index){
-				return selectorStepStream(step, index==phase.length-1)
-			}))
-*/
+			})*/
 		}
 		else{
 			return selectorStepStream(phase[0], true)
