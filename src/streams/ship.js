@@ -14,7 +14,6 @@ module.exports = function(api){
 
 		// collect the contract which is the body of the request
 		req.pipe(concat(function(contract){
-
 			// now we have the contract as POJO we can turn it into a stream
 			// and pipe the output to the res
 			api.convert(contract[0]).pipe(res)

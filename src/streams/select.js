@@ -3,65 +3,67 @@ var through = require('through2')
 var Selector = require('digger-selector')
 var streamworks = require('streamworks')
 var duplexer = require('reduplexer')
+var cascade = require('group-cascade-stream')
 
 // the front-end ship handler
 // the contract is the body
 module.exports = function(api){
 
-	// load from a single node with a single selector step
-	function selectorPathStream(selector, path, laststep){
-		console.log('-------------------------------------------');
-		console.log('make warehouse');
-		console.dir(path);
+	// a designated warehouse selector stream
+	function warehouseQueryFactory(warehouse, selector, laststep){
 		var headers = {
 			'x-digger-selector':selector
 		}
 		if(laststep){
 			headers['x-digger-laststep'] = true
 		}
-		
 		return api({
 			method:'get',
-			url:path,
+			url:warehouse,
 			headers:headers
 		})
 	}
 
 	// create a stream for a single selector step - multiple node ids will be piped in
-	function selectorStepStream(step, laststep){
+	function selectorStepStream(selector, laststep){
 
+		var inputopen = true
+		var warehousesopen = 0
+		var warehouses = {}
+		
 		var output = through.obj()
 
-		// trigger an end on the duplex when all the query streams are done
-		var streamsOpen = 0
+		var input = through.obj(function(chunk, enc, nextid){
 
-		// the open warehouse stream by their base resolved url
-		var streams = {}
+			console.log('-------------------------------------------');
+			console.dir('input: ' + chunk);
+			console.dir(selector.tag);
+			var warehouseid = api.warehouse.resolve(chunk)
 
-		function makeStream(path){
-			var s = selectorPathStream(step, path, laststep)
-				.pipe(through.obj(function(chunk, topenc, cb){
-					console.log('-------------------------------------------');
-					console.log('have answer');
-					output.push(chunk)
-					cb()
-				}, function(){
-					streamsOpen--
-					if(streamsOpen<=0){
-						output.push(null)
-					}
-				}))
-			return s
-		}
-
-		var input = through.obj(function(path, enc, cb){
-			var base = api.warehouses.resolve(path)
-			if(!streams[base]){
-				streamsOpen++
-				streams[base] = makeStream(base)
+			var warehouse = warehouses[warehouseid]
+			if(!warehouse){
+				warehouse = warehouses[warehouseid] = warehouseQueryFactory(warehouseid, selector, laststep)
+				warehousesopen++
 			}
-			streams[base].push(path)
-			cb()
+
+			var stream = warehouse(chunk)
+
+			stream.pipe(output, {end:false})
+
+			stream.on('end', function(){
+				warehousesopen--
+				if(!inputopen && warehousesopen<=0){
+					console.log('-------------------------------------------');
+					console.log('warehouse end');
+					output.push()
+				}
+				
+			})
+
+			nextid()
+
+		}, function(){
+			inputopen = false
 		})
 
 		return duplexer(input, output, {
@@ -74,9 +76,37 @@ module.exports = function(api){
 	// the input is the starting contexts
 	function selectorPhaseStream(phase){
 		if(phase.length>1){
-			return streamworks.pipe(phase.map(function(step, index){
+
+			var start = selectorStepStream(phase[0])
+
+			var middle = through.obj(function(chunk, enc, cb){
+				console.log('-------------------------------------------');
+				console.log('first result');
+				console.dir(chunk);
+				this.push(chunk)
+				cb()
+			})
+
+			var second = selectorStepStream(phase[1], true)
+
+			var end = through.obj(function(chunk, enc, cb){
+				console.log('-------------------------------------------');
+				console.log('second result');
+				console.dir(chunk);
+				this.push(chunk)
+				cb()
+			})
+
+			start.pipe(middle).pipe(second).pipe(end)
+
+			return duplexer(start, end, {
+				objectMode:true
+			})
+			/*
+			return streamworks.pipeObjects(phase.map(function(step, index){
 				return selectorStepStream(step, index==phase.length-1)
 			}))
+*/
 		}
 		else{
 			return selectorStepStream(phase[0], true)
@@ -87,7 +117,7 @@ module.exports = function(api){
 	// multiple phases are merged
 	function selectorStringStream(selector){
 		if(selector.phases.length>1){
-			return streamworks.merge(selector.phases.map(selectorPhaseStream))
+			return streamworks.mergeObjects(selector.phases.map(selectorPhaseStream))
 		}
 		else{
 			return selectorPhaseStream(selector.phases[0])
@@ -111,7 +141,7 @@ module.exports = function(api){
 			throw new Error('no selector or context given')
 		}
 		else if(selector && context){
-			return streamworks.pipe([
+			return streamworks.pipeObjects([
 				context,
 				selector
 			])
