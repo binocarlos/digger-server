@@ -5,6 +5,24 @@ var streamworks = require('streamworks')
 var duplexer = require('reduplexer')
 var cascade = require('group-cascade-stream')
 
+function getModelUrl(model){
+	return typeof(model)==='string' ? model : model._digger.path + '/' + model._digger.inode
+}
+
+function uniqueFilter(){
+	var hit = {}
+	return function(chunk){
+		var url = getModelUrl(chunk)
+		if(!hit[url]){
+			hit[url] = true
+			return true
+		}
+		else{
+			return false
+		}
+	}
+}
+
 // the front-end ship handler
 // the contract is the body
 module.exports = function(api){
@@ -22,41 +40,26 @@ module.exports = function(api){
 			url:'/warehouse',
 			headers:headers
 		})
+
+		var filter = uniqueFilter()
+
 		return through.obj(function(chunk, enc, nextinput){
 			var self = this;
+/*
+			var unique = uniqueFilter(function(r){
+				self.push(chunk)
+			})*/
+
 			query(chunk)
 				.pipe(through.obj(function(chunk, enc, cb){
-					this.push(chunk)
-					cb()
-				}))
-				.pipe(through.obj(function(chunk, enc, cb){
-					console.log('-------------------------------------------');
-					console.dir(chunk);
-					self.push(chunk)
+					if(filter(chunk)){
+						self.push(chunk)	
+					}
 					cb()
 				}, function(){
-					console.log('-------------------------------------------');
-					console.log('-------------------------------------------');
-					console.log('FIN');
 					nextinput()		
 				}))
-/*
-			results.on('end', function(){
-				open--
-				if(open<=0){
-					//output.push()
-				}
-			})
-			results.pipe(through.obj(function(chunk, enc, cb){
-				this.push(chunk)
-				cb()
-			}))
-			nextinput()*/
 		})
-/*
-		return duplexer(input, output, {
-			objectMode:true
-		})*/
 	}
 
 	// create a stream for a selector phase of steps
@@ -79,7 +82,22 @@ module.exports = function(api){
 	// multiple phases are merged
 	function selectorStringStream(selector){
 		if(selector.phases.length>1){
-			return streamworks.mergeObjects(selector.phases.map(selectorPhaseStream))
+	
+			var filter = uniqueFilter()
+
+			var input = streamworks.mergeObjects(selector.phases.map(selectorPhaseStream))
+			var output = through.obj(function(chunk, enc, cb){
+				if(filter(chunk)){
+					this.push(chunk)
+				}
+				cb()
+			})
+
+			input.pipe(output)
+
+			return duplexer(input, output, {
+				objectMode:true
+			})
 		}
 		else{
 			return selectorPhaseStream(selector.phases[0])
