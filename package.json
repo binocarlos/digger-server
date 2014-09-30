@@ -1,6 +1,6 @@
 {
   "name": "digger-server",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "description": "LevelDB backed digger warehouse",
   "main": "src/index.js",
   "scripts": {
