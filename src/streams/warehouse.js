@@ -2,7 +2,6 @@ var through = require('through2')
 var Router = require('routes')
 var Selector = require('digger-selector')
 
-
 function apiwrapper(api){
 	return function(req){
 		var handler = api[req.method]

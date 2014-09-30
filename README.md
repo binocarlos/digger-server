@@ -3,7 +3,7 @@ digger-server
 
 ![Build status](https://api.travis-ci.org/binocarlos/digger-server.png)
 
-LevelDB backed digger warehouse
+Warehouse routing for [digger-client](https://github.com/diggerio/digger-client) requests.
 
 ## install
 
@@ -13,39 +13,30 @@ $ npm install digger-server
 
 ## usage
 
-You create a digger database by passing in an existing [leveldb](https://github.com/rvagg/node-levelup) - this can also be a [sub-level](https://github.com/dominictarr/level-sublevel)
-
-You can either use the api directly or mount a HTTP handler.
+Make a [digger-level](https://github.com/diggerio/digger-level) supplier and mount it.
 
 ```js
-var Digger = require('digger-server')
-var Level = require('level-digger')
-
-var http = require('http')
-
-var digger = Server(leveldb);
-
-digger.use()
-
-
 var level = require('level');
-var leveldb = level('/tmp/diggertest');
+var diggerserver = require('digger-server')
+var diggerlevel = require('digger-level')
 
+// create a new leveldb - this can also be a sub-level
+var leveldb = level('/tmp/digger')
 
-var server = http.createServer(diggerdb.httpHandler());
+// create a level digger supplier
+var supplier = diggerlevel(leveldb)
 
-server.listen(80, function(){
-	console.log('digger server listening');
-})
+// create a digger server to mount our level supplier
+var digger = diggerserver()
+
+// mount the level supplier onto the server
+digger.use(supplier)
+
+// create a HTTP server to host it
+var server = http.createServer(digger.handler())
+
+server.listen(80)
 ```
-
-## api
-
-The REST api is a front-end for the JavaScript api.
-
-In almost all cases - the JavaScript api represents HTTP requests.
-
-#### `diggerdb
 
 ## licence
 MIT

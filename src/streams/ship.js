@@ -6,12 +6,8 @@ var through = require('through2');
 module.exports = function(api){
 	return function(req){
 
-		// the response stream
-		var res = through.obj(function(chunk, enc, cb){
-			this.push(chunk)
-			cb()
-		})
-
+		var res = through.obj()
+		
 		// collect the contract which is the body of the request
 		req.pipe(concat(function(contract){
 

@@ -14,23 +14,17 @@ module.exports = function(server){
 	// /select -> selector resolving
 	// /warehouse -> REST api for data
 	//
+	var methods = {
+		'ship':Ship(api),
+		'stream':Stream(api),
+		'select':Select(api),
+		'warehouse':Warehouse(api)
+	}
+
 	function api(req){
 		var method = req.url.split('/')[1]
 		var fn = methods[method] || methods.warehouse
-		var warehousename = method || 'warehouse'
-		var stream = fn(req)
-		if(!stream){
-			throw new Error('no stream returned: ' + method + ' - ' + req.url)
-		}
-		stream._api = req.url
-		return stream
-	}
-
-	var methods = {
-		'ship':Ship(api),
-		'select':Select(api),
-		'stream':Stream(api),
-		'warehouse':Warehouse(api)
+		return fn(req)
 	}
 
 	api.server = server

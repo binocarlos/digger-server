@@ -30,14 +30,10 @@
     "digger-utils": "^3.0.0",
     "concat-stream": "^1.4.5",
     "through2": "^0.4.1",
-    "from2": "0.0.0",
     "streamworks": "^0.1.4",
     "routes": "^1.1.0",
-    "level-sublevel": "^5.2.0",
-    "level-test": "^1.6.2",
     "digger-selector": "^0.2.0",
-    "reduplexer": "0.0.2",
-    "cascade-stream": "0.0.2",
-    "group-cascade-stream": "0.0.2"
+    "reduplexer": "^0.0.2",
+    "from2-array": "^0.0.2"
   }
 }

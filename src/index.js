@@ -11,18 +11,18 @@ function Server(){
 util.inherits(Server, EventEmitter)
 
 // main api entry point
-// req should be converted already by the transport
+// req & res should be in object mode
 Server.prototype.reception = function(req, res){
-/*
-	console.log('-------------------------------------------');
-	console.log('reception');
-	console.dir(req.method);
-	console.dir(req.url);
-	console.dir(req.headers);*/
-	this.api(req).pipe(through.obj(function(chunk, enc, cb){
-		//console.log('-------------------------------------------');
-		//console.log('RES');
-		//console.dir(chunk);
+	var stream = this.api(req)
+
+	if(!stream || typeof(stream)=='string'){
+		stream = stream || 'no stream returned'
+		res.emit('error', stream)
+		return
+	}
+
+	stream.pipe(through.obj(function(chunk, enc, cb){
+		// we can put server level filters here
 		this.push(chunk)
 		cb()
 	})).pipe(res)
@@ -30,6 +30,10 @@ Server.prototype.reception = function(req, res){
 
 Server.prototype.use = function(route, warehouse){
 	this.api.warehouse.use(route, warehouse)
+}
+
+Server.prototype.handler = function(){
+	return this.reception.bind(this)
 }
 
 module.exports = function(){

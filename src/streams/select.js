@@ -1,9 +1,7 @@
-var concat = require('concat-stream')
 var through = require('through2')
 var Selector = require('digger-selector')
 var streamworks = require('streamworks')
 var duplexer = require('reduplexer')
-var cascade = require('group-cascade-stream')
 
 function getModelUrl(model){
 	return typeof(model)==='string' ? model : model._digger.path + '/' + model._digger.inode
@@ -120,7 +118,7 @@ module.exports = function(api){
 		}
 
 		if(!selector && !contract){
-			throw new Error('no selector or context given')
+			return 'no selector or context given'
 		}
 		else if(selector && context){
 			return streamworks.pipeObjects([

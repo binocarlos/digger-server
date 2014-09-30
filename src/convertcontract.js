@@ -1,4 +1,4 @@
-var from = require('from2')
+var from = require('from2-array')
 var streamworks = require('streamworks')
 var tools = require('./tools')
 
@@ -34,11 +34,7 @@ module.exports = function(api){
 				var piped = streamworks.pipe({
 					objectMode:true
 				},[
-					from.obj(function(size, next){
-						if (body.length <= 0) return this.push(null)
-				    var chunk = body.shift()
-				    next(null, chunk)
-					}),
+					from.obj(body),
 					stream
 				])
 				piped._api = stream._api
