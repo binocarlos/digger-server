@@ -32,7 +32,7 @@
     "through2": "^0.4.1",
     "streamworks": "^0.1.4",
     "routes": "^1.1.0",
-    "digger-selector": "^0.2.0",
+    "digger-selector": "^0.4.0",
     "reduplexer": "^0.0.2",
     "from2-array": "^0.0.2"
   }

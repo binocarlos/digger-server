@@ -5,7 +5,7 @@ var Warehouse = require('./streams/warehouse')
 var ConvertContract = require('./convertcontract')
 var utils = require('digger-utils')
 
-module.exports = function(server){
+module.exports = function(supplier){
 
 	// we trigger the api by the first part of the url
 	// a request is passed
@@ -19,7 +19,7 @@ module.exports = function(server){
 		'ship':Ship(api),
 		'stream':Stream(api),
 		'select':Select(api),
-		'warehouse':Warehouse(api)
+		'warehouse':Warehouse(supplier)
 	}
 
 	function api(req){
@@ -31,11 +31,7 @@ module.exports = function(server){
 		return fn(req)
 	}
 
-	api.server = server
 	api.convert = ConvertContract(api)
-	api.methods = methods
-	api.warehouse = methods.warehouse
-	api.use = api.warehouse.use.bind(api.warehouse)
 
 	return api
 }

@@ -1,6 +1,7 @@
 var Server = require('../src');
 var Client = require('digger-client');
 var through = require('through2')
+var from = require('from2-array')
 
 describe('diggerserver', function(){
 
@@ -22,12 +23,178 @@ describe('diggerserver', function(){
 
   describe('basic queries', function(){
 
-    it('run a query with a stub warehouse', function(done){
+    it('run a select query with a stub warehouse as a function', function(done){
+
+      var client = Client();
+
+      var digger = Server(function(req){
+
+        return function(path){
+
+          return from.obj([{
+            _digger:{
+              tag:'fruit',
+              class:['red']
+            },
+            name:'test'
+          }])
+
+        }
+      })
+
+      client.on('request', digger.handler());
+
+      var warehouse = client.connect('/apples');
+
+      warehouse('fruit.red').ship(function(answers){
+
+        answers.models[0].name.should.equal('test')
+        
+        done();
+        
+      })
+
+    })
+
+
+    it('run a select query with a stub warehouse as an object', function(done){
+
+      var client = Client();
+
+      var digger = Server({
+        select:function(req){
+
+          return function(path){
+
+            return from.obj([{
+              _digger:{
+                tag:'fruit',
+                class:['red']
+              },
+              name:'test'
+            }])
+
+          }
+        }
+      })
+      
+      client.on('request', digger.handler());
+
+      var warehouse = client.connect('/apples');
+
+      warehouse('fruit.red').ship(function(answers){
+
+        answers.models[0].name.should.equal('test')
+        
+        done();
+        
+      })
+
+    })
+
+    it('run a load query with a stub warehouse as an object', function(done){
+
+      var client = Client();
+
+      var digger = Server({
+        select:function(req){
+
+          return function(path){
+
+            var fullpath = req.headers['x-digger-selector'].diggerid + path
+
+            fullpath.should.equal('/red/apples')
+
+            return from.obj([{
+              _digger:{
+                tag:'fruit',
+                class:['red']
+              },
+              name:fullpath
+            }])
+
+          }
+        }
+      })
+      
+      client.on('request', digger.handler());
+
+      var warehouse = client.connect('/apples');
+
+      warehouse('/red').ship(function(answers){
+
+        answers.models[0].name.should.equal('/red/apples')
+
+        
+        done();
+        
+      })
+
+    })
+/*
+    it('should match the correct warehouse from several', function(done){
 
       var digger = Server();
       var client = Client();
 
-      digger.use(function(req, res){
+      digger.use('/apples/red', function(req, res){
+
+        return function(path){
+
+          console.log('-------------------------------------------');
+          console.dir(path)
+          return from.obj([{
+            _digger:{
+              tag:'apple',
+              class:['red']
+            },
+            name:'test'
+          }])
+
+        }
+      })
+
+      digger.use('/apples/green', function(req, res){
+
+        return function(path){
+
+          console.log('-------------------------------------------');
+          console.dir(path)
+
+          return from.obj([{
+            _digger:{
+              tag:'apple',
+              class:['green']
+            },
+            name:'test'
+          }])
+
+        }
+      })
+
+      client.on('request', digger.reception.bind(digger));
+
+      var warehouse = client.connect('/apples/red');
+
+      warehouse('fruit.red').ship(function(answers){
+
+        console.log('-------------------------------------------');
+        console.dir(answers)
+
+        answers.models[0].name.should.equal('test')
+        
+        done();
+        
+      })
+
+    })
+
+    it('run an append query with a stub warehouse', function(done){
+
+      var digger = Server();
+      var client = Client();
+
+      digger.use(function(req){
         return through.obj(function(chunk, env, cb){
 
           chunk._digger.tag.should.equal('folder')
@@ -47,8 +214,6 @@ describe('diggerserver', function(){
 
       var data = client.create('folder').addClass('red');
 
-      var contract = warehouse.append(data)
-
       warehouse.append(data).ship(function(answers){
 
         var models = answers.models
@@ -61,7 +226,7 @@ describe('diggerserver', function(){
       })
 
     })
-
+*/
   })
 
 

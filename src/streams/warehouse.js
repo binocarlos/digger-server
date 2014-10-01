@@ -1,79 +1,68 @@
 var through = require('through2')
 var Router = require('routes')
 var Selector = require('digger-selector')
+var from = require('from2-array')
+/*
 
-function apiwrapper(api){
+	wrap an object with get,post,put and delete keys into a handler function
+	
+*/
+module.exports = function wrapsupplier(supplier){
 	return function(req){
-		var handler = api[req.method]
-		if(!handler){
-			throw new Error('no handler found for method: ' + req.method + ' ' + req.url)	
+
+		if(typeof(supplier)=='function'){
+			return supplier(req)
 		}
 
-		// process selector strings
+		// Expect no input
 		if(req.method=='get'){
 			var query = req.query || {}
 			var queryselector = query.selector || query.s
 			var headerselector = req.headers['x-digger-selector']
 
 			var selector = queryselector || headerselector
+			var feedurl = ''
 
-			if(typeof(selector)==='string'){
-				selector = Selector(selector)
-				if(selector && selector.phases && selector.phases.length>0){
-					selector = selector.phases[0][0]
+			if(selector){
+				if(typeof(selector)==='string'){
+					selector = Selector(selector)
+					if(selector && selector.phases && selector.phases.length>0){
+						selector = selector.phases[0][0]
+					}
 				}
+				feedurl = req.url
+			}
+			else{
+				selector = {
+					diggerid:req.url
+				}
+				feedurl = ''
 			}
 
 			req.headers['x-digger-selector'] = selector
+			req.headers['x-digger-laststep'] = true
+
+			var queryStreamFn = supplier.select(req)
+			return queryStreamFn(feedurl)
 		}
-		
-		return handler(req)
-	}
-}
+		else if(req.method=='post'){
+			if(req.url.indexOf('/_select/')==0){
+				req.url = req.url.substr('/_select'.length)
+				var selector = req.headers['x-digger-selector']
 
-// the main gateway to the backend databases
-// we match warehouses by their path
-// the warehouse is just a function
-// it accepts a req and returns a duplex stream
-module.exports = function(api){
-
-	var router = new Router();
-
-	function warehouse(req){
-		//req.url = req.url.substr('/warehouse'.length)
-
-  	var match = router.match(req.url);
-
-  	if(match){
-  		return match.fn(req)
-  	}
-  	else{
-  		return 'warehouse not found: ' + req.url
-  	}
-	}
-
-	// turn a route into the warehouse it would match
-	warehouse.resolve = function(route){
-		var match = router.match(route || '/')
-		return match ? match.route : '/'
-	}
-
-	warehouse.use = function(route, fn){
-		if(!fn){
-			fn = route;
-			route = null;
+				// supplier select returns function(path) which returns a stream
+				return supplier.select(req)
+			}
+			else{
+				return supplier.append(req)	
+			}
+			
 		}
-
-		if(typeof(fn)!=='function'){
-			fn = apiwrapper(fn)
+		else if(req.method=='put'){
+			return supplier.save(req)	
 		}
-
-		if(!route){
-			route = '/*'
+		else if(req.method=='delete'){
+			return supplier.remove(req)	
 		}
-
-		router.addRoute(route, fn)
 	}
-
-	return warehouse
 }

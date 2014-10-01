@@ -3,9 +3,9 @@ var util = require('digger-utils')
 var Api = require('./api')
 var through = require('through2')
 
-function Server(){
+function Server(supplier){
 	EventEmitter.call(this)
-	this.api = Api(this)
+	this.api = Api(supplier)
 }
 
 util.inherits(Server, EventEmitter)
@@ -13,7 +13,9 @@ util.inherits(Server, EventEmitter)
 // main api entry point
 // req & res should be in object mode
 Server.prototype.reception = function(req, res){
-	var stream = this.api(req)
+	var self = this;
+	
+	var stream = self.api(req)
 
 	if(!stream || typeof(stream)=='string'){
 		stream = stream || 'no stream returned'
@@ -28,10 +30,10 @@ Server.prototype.reception = function(req, res){
 	})).pipe(res)
 }
 
-Server.prototype.use = function(route, warehouse){
-	this.api.warehouse.use(route, warehouse)
+Server.prototype.handler = function(){
+	return this.reception.bind(this)
 }
 
-module.exports = function(){
-	return new Server()
+module.exports = function(supplier){
+	return new Server(supplier)
 }

@@ -26,7 +26,7 @@ function uniqueFilter(){
 module.exports = function(api){
 
 	// create a stream for a single selector step - multiple node ids will be piped in
-	function selectorMultiStream(selector, laststep){
+	function selectorMultiStream(url, selector, laststep){
 		var headers = {
 			'x-digger-selector':selector
 		}
@@ -34,19 +34,19 @@ module.exports = function(api){
 			headers['x-digger-laststep'] = true
 		}
 		var query = api({
-			method:'get',
-			url:'/',
+			method:'post',
+			url:'/_select' + url,
 			headers:headers
 		})
+
+		if(typeof(query)!='function'){
+			return query
+		}
 
 		var filter = uniqueFilter()
 
 		return through.obj(function(chunk, enc, nextinput){
 			var self = this;
-/*
-			var unique = uniqueFilter(function(r){
-				self.push(chunk)
-			})*/
 
 			query(chunk)
 				.pipe(through.obj(function(chunk, enc, cb){
@@ -63,28 +63,28 @@ module.exports = function(api){
 	// create a stream for a selector phase of steps
 	// multiple steps are piped through each other
 	// the input is the starting contexts
-	function selectorPhaseStream(phase, lastString){
+	function selectorPhaseStream(url, phase, lastString){
 		if(phase.length>1){
 			var selectorStreams = phase.map(function(step, index){
-				return selectorMultiStream(step, lastString && index==phase.length-1)
+				return selectorMultiStream(url, step, lastString && index==phase.length-1)
 			})
 			var query = streamworks.pipeObjects(selectorStreams)
 			return query
 		}
 		else{
-			return selectorMultiStream(phase[0], lastString)
+			return selectorMultiStream(url, phase[0], lastString)
 		}
 	}
 
 	// create a stream for multiple phases (selectors split by ',')
 	// multiple phases are merged
-	function selectorStringStream(selector, lastString){
+	function selectorStringStream(url, selector, lastString){
 		if(selector.phases.length>1){
 	
 			var filter = uniqueFilter()
 
 			var input = streamworks.mergeObjects(selector.phases.map(function(phase){
-				return selectorPhaseStream(phase, lastString)
+				return selectorPhaseStream(url, phase, lastString)
 			}))
 			var output = through.obj(function(chunk, enc, cb){
 				if(filter(chunk)){
@@ -100,7 +100,7 @@ module.exports = function(api){
 			})
 		}
 		else{
-			return selectorPhaseStream(selector.phases[0], lastString)
+			return selectorPhaseStream(url, selector.phases[0], lastString)
 		}
 	}
 
@@ -111,10 +111,10 @@ module.exports = function(api){
 		var context = null
 
 		if(req.headers['x-digger-selector']){
-			selector = selectorStringStream(Selector(req.headers['x-digger-selector']), true)
+			selector = selectorStringStream(req.url, Selector(req.headers['x-digger-selector']), true)
 		}
 		if(req.headers['x-digger-context']){
-			context = selectorStringStream(Selector(req.headers['x-digger-context']))
+			context = selectorStringStream(req.url, Selector(req.headers['x-digger-context']))
 		}
 
 		if(!selector && !contract){
