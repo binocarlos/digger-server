@@ -35,7 +35,7 @@ module.exports = function(api){
 		}
 		var query = api({
 			method:'get',
-			url:'/warehouse',
+			url:'/',
 			headers:headers
 		})
 

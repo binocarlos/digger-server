@@ -40,26 +40,21 @@ module.exports = function(api){
 	var router = new Router();
 
 	function warehouse(req){
-		req.url = req.url.substr('/warehouse'.length)
+		//req.url = req.url.substr('/warehouse'.length)
 
   	var match = router.match(req.url);
 
   	if(match){
   		return match.fn(req)
   	}
-  	else if(warehouse.baseWarehouse){
-  		return warehouse.baseWarehouse(req)
-  	}
   	else{
-  		return through.obj(function(chunk, enc, cb){
-				cb('warehouse not found: ' + req.url)
-			})
+  		return 'warehouse not found: ' + req.url
   	}
 	}
 
 	// turn a route into the warehouse it would match
 	warehouse.resolve = function(route){
-		var match = router.match(route)
+		var match = router.match(route || '/')
 		return match ? match.route : '/'
 	}
 
@@ -73,12 +68,11 @@ module.exports = function(api){
 			fn = apiwrapper(fn)
 		}
 
-		if(route){
-			router.addRoute(route, fn)
+		if(!route){
+			route = '/*'
 		}
-		else{
-			warehouse.baseWarehouse = fn
-		}
+
+		router.addRoute(route, fn)
 	}
 
 	return warehouse

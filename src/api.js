@@ -22,6 +22,9 @@ module.exports = function(server){
 	}
 
 	function api(req){
+		if(req.url.indexOf('/digger')==0){
+			req.url = req.url.substr('/digger'.length)
+		}
 		var method = req.url.split('/')[1]
 		var fn = methods[method] || methods.warehouse
 		return fn(req)

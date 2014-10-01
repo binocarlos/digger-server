@@ -1,6 +1,7 @@
 var from = require('from2-array')
 var streamworks = require('streamworks')
 var tools = require('./tools')
+var utils = require('digger-utils')
 
 // turn a JSON object describing a contract into a single stream
 // if a contract is not merge or pipe and has a body - the body
@@ -8,7 +9,7 @@ var tools = require('./tools')
 module.exports = function(api){
 	return function factory(req){
 		// create a streamworks
-		if(req.url=='/merge' || req.url=='/pipe'){
+		if(req.url==utils.urls.merge || req.url==utils.urls.pipe){
 			var streams = req.body.map(function(c){
 				return factory(c)
 			})
