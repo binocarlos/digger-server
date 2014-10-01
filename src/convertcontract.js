@@ -14,8 +14,8 @@ module.exports = function(api){
 				return factory(c)
 			})
 
-			if(req.url.indexOf('/digger')==0){
-				req.url = req.url.substr('/digger'.length)
+			if(req.url.indexOf(utils.urls.base)==0){
+				req.url = req.url.substr(utils.urls.base.length)
 			}
 			
 			var method = req.url.substr(1)

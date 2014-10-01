@@ -3,6 +3,7 @@ var Stream = require('./streams/stream')
 var Select = require('./streams/select')
 var Warehouse = require('./streams/warehouse')
 var ConvertContract = require('./convertcontract')
+var utils = require('digger-utils')
 
 module.exports = function(server){
 
@@ -22,8 +23,8 @@ module.exports = function(server){
 	}
 
 	function api(req){
-		if(req.url.indexOf('/digger')==0){
-			req.url = req.url.substr('/digger'.length)
+		if(req.url.indexOf(utils.urls.base)==0){
+			req.url = req.url.substr(utils.urls.base.length)
 		}
 		var method = req.url.split('/')[1]
 		var fn = methods[method] || methods.warehouse
