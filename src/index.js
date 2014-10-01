@@ -32,15 +32,6 @@ Server.prototype.use = function(route, warehouse){
 	this.api.warehouse.use(route, warehouse)
 }
 
-// HTTP entrypoint
-// req and res are in string mode and need processing (using JSON Stream)
-Server.prototype.handler = function(){
-	var self = this;
-	return function(req, res){
-
-	}
-}
-
 module.exports = function(){
 	return new Server()
 }

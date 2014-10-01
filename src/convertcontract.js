@@ -14,6 +14,10 @@ module.exports = function(api){
 				return factory(c)
 			})
 
+			if(req.url.indexOf('/digger')==0){
+				req.url = req.url.substr('/digger'.length)
+			}
+			
 			var method = req.url.substr(1)
 			return streamworks[method].apply(null, [true,streams])
 		}
