@@ -2,7 +2,7 @@ var Server = require('../src');
 var Client = require('digger-client');
 var through = require('through2')
 var from = require('from2-array')
-
+var concat = require('concat-stream')
 
 describe('diggerserver', function(){
 
@@ -119,14 +119,16 @@ describe('diggerserver', function(){
       var digger = Server();
       
       digger.warehouse({
-        select:function(req){
+        select:function(selector, laststep){
+
+          selector.string.should.equal('apples.red')
+          selector.class.red.should.equal(true)
+          selector.tag.should.equal('apples')
       
           return function(path){
 
-            console.log('-------------------------------------------');
-            console.log('-------------------------------------------');
-            console.log('path')
-            console.log(path)
+            path.should.equal('/apples/blue')
+
             return from.obj([{
               _digger:{
                 path:'/apples/red',
@@ -142,18 +144,18 @@ describe('diggerserver', function(){
       })
 
       var res = concat(function(results){
-        console.log('-------------------------------------------');
-        console.log('-------------------------------------------');
-        console.dir('here')
-        console.dir(results)
+
+        results.length.should.equal(1)
+        results[0].name.should.equal('test')
+
+        done()
       })
 
-      var req = from.obj([
-        '/apples/blue'
-      ])
-
       var req = {
-        url:'/apples/blue?selector=apples.red',
+        url:'/apples/blue',
+        query:{
+          selector:'apples.red'
+        },
         headers:{},
         method:'get'
       }
