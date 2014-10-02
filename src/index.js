@@ -3,9 +3,13 @@ var util = require('digger-utils')
 var Api = require('./api')
 var through = require('through2')
 
-function Server(supplier){
+function Server(){
+	var self = this;
 	EventEmitter.call(this)
-	this.api = Api(supplier)
+	this.api = Api()
+	this.api.on('request', function(type, req){
+		self.emit('request', type, req)
+	})
 }
 
 util.inherits(Server, EventEmitter)
@@ -15,7 +19,7 @@ util.inherits(Server, EventEmitter)
 Server.prototype.reception = function(req, res){
 	var self = this;
 	
-	var stream = self.api(req)
+	var stream = self.api.getHandler(req)
 
 	if(!stream || typeof(stream)=='string'){
 		stream = stream || 'no stream returned'
@@ -32,6 +36,11 @@ Server.prototype.reception = function(req, res){
 
 Server.prototype.handler = function(){
 	return this.reception.bind(this)
+}
+
+Server.prototype.use = function(route, supplier){
+	this.api.warehouse.use(route, supplier)
+	return this
 }
 
 module.exports = function(supplier){

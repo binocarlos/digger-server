@@ -32,7 +32,7 @@ module.exports = function(api){
 
 			delete(req.body)
 
-			var stream = api(req)
+			var stream = api.getHandler(req)
 
 			// create a fake pipe with the source data ignoring the input
 			if(body){

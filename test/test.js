@@ -23,11 +23,43 @@ describe('diggerserver', function(){
 
   describe('basic queries', function(){
 
+    it('should return an empty result for no warehouse match', function(done){
+
+      var client = Client();
+
+      var digger = Server()
+
+      var eventsHit = {}
+
+      digger.on('request', function(type, req){
+        eventsHit[type] = req
+      })
+
+      client.on('request', digger.handler());
+
+      var warehouse = client.connect('/apples');
+
+      warehouse('fruit.red').ship(function(answers){
+
+        eventsHit.ship.url.should.equal('/ship')
+        eventsHit.select.url.should.equal('/select')
+        eventsHit.select.headers['x-digger-selector'].should.equal('fruit.red')
+        answers.models.length.should.equal(0)
+        done();
+        
+      })
+
+    })
+
+
+/*
     it('run a select query with a stub warehouse as a function', function(done){
 
       var client = Client();
 
-      var digger = Server(function(req){
+      var digger = Server()
+
+      digger.use('/apples5', function(req){
 
         return function(path){
 
@@ -48,6 +80,9 @@ describe('diggerserver', function(){
 
       warehouse('fruit.red').ship(function(answers){
 
+        console.log('-------------------------------------------');
+        console.dir(answers.models)
+        process.exit()
         answers.models[0].name.should.equal('test')
         
         done();
@@ -131,6 +166,7 @@ describe('diggerserver', function(){
       })
 
     })
+*/
 /*
     it('should match the correct warehouse from several', function(done){
 

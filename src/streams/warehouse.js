@@ -2,12 +2,15 @@ var through = require('through2')
 var Router = require('routes')
 var Selector = require('digger-selector')
 var from = require('from2-array')
+var EventEmitter = require('events').EventEmitter
+
 /*
 
-	wrap an object with get,post,put and delete keys into a handler function
+	wrap a supplier object to handle HTTP type requests
 	
 */
-module.exports = function wrapsupplier(supplier){
+function wrapsupplier(supplier){
+
 	return function(req){
 
 		if(typeof(supplier)=='function'){
@@ -65,4 +68,65 @@ module.exports = function wrapsupplier(supplier){
 			return supplier.remove(req)	
 		}
 	}
+}
+
+var EventEmitter = require('events').EventEmitter
+var util = require('util')
+
+function Warehouse(){
+	EventEmitter.call(this)
+	this._router = new Router()
+}
+
+util.inherits(Warehouse, EventEmitter)
+
+module.exports = Warehouse
+
+Warehouse.prototype.handler = function(req){
+
+	var checkURL = req.url
+
+	if(checkURL.indexOf('/_select/')==0){
+		checkURL = checkURL.substr('/_select'.length)
+	}
+	var match = this._router.match(checkURL);
+
+	if(match){
+		this.emit('request', req)
+		return match.fn(req)
+	}
+	else{
+		return null
+	}
+}
+
+Warehouse.prototype.resolve = function(route){
+	var match = this._router.match(route || '/')
+	return match ? match.route : '/'
+}
+
+Warehouse.prototype.use = function(route, supplier){
+	if(!supplier){
+		supplier = route;
+		route = null;
+	}
+
+	supplier = wrapsupplier(supplier)
+
+	if(!route){
+		route = '/*'
+	}
+
+	if(!route.match(/\/\*$/)){
+		route = route + '/*'
+	}
+
+	this._router.addRoute(route, supplier)
+}
+
+
+module.exports = function(){
+
+	return new Warehouse()
+
 }

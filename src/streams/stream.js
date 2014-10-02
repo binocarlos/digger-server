@@ -1,10 +1,16 @@
+var EventEmitter = require('events').EventEmitter
 var tools = require('../tools')
 
 // the front-end stream handler
 // the contract lives the in header
 module.exports = function(api){
-	return function(req){
 
+	var streamWarehouse = new EventEmitter()
+
+	streamWarehouse.handler = function(req){
+
+		streamWarehouse.emit('request', req)
+		
 		var contract = req.headers['x-digger-contract']
 
 		if(typeof(contract)==='string'){
@@ -15,4 +21,6 @@ module.exports = function(api){
 
 		return req.pipe(api.convert(contract))
 	}
+
+	return streamWarehouse
 }

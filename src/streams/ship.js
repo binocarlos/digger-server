@@ -1,11 +1,16 @@
 var concat = require('concat-stream');
 var through = require('through2');
+var EventEmitter = require('events').EventEmitter
 
 // the front-end ship handler
 // the contract is the body
 module.exports = function(api){
-	return function(req){
 
+	var shipper = new EventEmitter()
+	shipper.handler = function(req){
+
+		shipper.emit('request', req)
+		
 		var res = through.obj()
 		
 		// collect the contract which is the body of the request
@@ -19,4 +24,6 @@ module.exports = function(api){
 
 		return res
 	}
+
+	return shipper
 }

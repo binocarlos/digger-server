@@ -1,7 +1,9 @@
 var through = require('through2')
+var from = require('from2-array')
 var Selector = require('digger-selector')
 var streamworks = require('streamworks')
 var duplexer = require('reduplexer')
+var EventEmitter = require('events').EventEmitter
 
 function getModelUrl(model){
 	return typeof(model)==='string' ? model : model._digger.path + '/' + model._digger.inode
@@ -25,6 +27,8 @@ function uniqueFilter(){
 // the contract is the body
 module.exports = function(api){
 
+	var selectorWarehouse = new EventEmitter()
+
 	// create a stream for a single selector step - multiple node ids will be piped in
 	function selectorMultiStream(url, selector, laststep){
 		var headers = {
@@ -33,11 +37,21 @@ module.exports = function(api){
 		if(laststep){
 			headers['x-digger-laststep'] = true
 		}
-		var query = api({
+
+		// we post to _select to say we are gonna stream the ids
+		var query = api.getHandler({
 			method:'post',
-			url:'/_select' + url,
+			url:'/_select',
 			headers:headers
 		})
+
+		// no match from registered suppliers
+		// return empty stream
+		if(!query){
+			return through.obj(function(chunk, enc, next){
+				next()
+			})
+		}
 
 		if(typeof(query)!='function'){
 			return query
@@ -105,7 +119,7 @@ module.exports = function(api){
 	}
 
 	// the master stream for the selector
-	return function(req){
+	selectorWarehouse.handler = function(req){
 
 		var selector = null
 		var context = null
@@ -116,6 +130,8 @@ module.exports = function(api){
 		if(req.headers['x-digger-context']){
 			context = selectorStringStream(req.url, Selector(req.headers['x-digger-context']))
 		}
+
+		selectorWarehouse.emit('request', req)
 
 		if(!selector && !contract){
 			return 'no selector or context given'
@@ -130,4 +146,6 @@ module.exports = function(api){
 			return selector || context
 		}
 	}
+
+	return selectorWarehouse
 }
