@@ -3,55 +3,6 @@ var Client = require('digger-client');
 var through = require('through2')
 var from = require('from2-array')
 
-function getBasicServer(){
-
-  var digger = Server()
-
-  digger.warehouse({
-    select:function(req){
-  
-      return function(path){
-
-        return from.obj([{
-          _digger:{
-            path:'/apples/red',
-            inode:'bigred',
-            tag:'fruit',
-            class:['red']
-          },
-          name:'test'
-        }])
-
-      }
-    }
-  })
-
-  digger.access(function(path, user, mode, next){
-    console.log('-------------------------------------------');
-    console.log('user')
-    console.dir(path)
-    console.log('path: ' + path)
-    console.log('user: ' + user)
-    console.log('mode: ' + mode)
-
-    next()
-  })
-
-  digger.on('request', function(type, req){
-    console.log('-------------------------------------------');
-    console.log(type)
-    console.dir(req.url)
-    console.dir(req.headers)
-  })
-
-  digger.on('event', function(type, name, data){
-    console.log('event:' + type + ' ' + name)
-    console.dir(data)
-  })
-
-  return digger
-
-}
 
 describe('diggerserver', function(){
 
@@ -159,6 +110,55 @@ describe('diggerserver', function(){
         done();
         
       })
+
+    })
+
+
+    it('run a direct query', function(done){
+
+      var digger = Server();
+      
+      digger.warehouse({
+        select:function(req){
+      
+          return function(path){
+
+            console.log('-------------------------------------------');
+            console.log('-------------------------------------------');
+            console.log('path')
+            console.log(path)
+            return from.obj([{
+              _digger:{
+                path:'/apples/red',
+                inode:'bigred',
+                tag:'fruit',
+                class:['red']
+              },
+              name:'test'
+            }])
+
+          }
+        }
+      })
+
+      var res = concat(function(results){
+        console.log('-------------------------------------------');
+        console.log('-------------------------------------------');
+        console.dir('here')
+        console.dir(results)
+      })
+
+      var req = from.obj([
+        '/apples/blue'
+      ])
+
+      var req = {
+        url:'/apples/blue?selector=apples.red',
+        headers:{},
+        method:'get'
+      }
+
+      digger.reception(req, res)
 
     })
 
