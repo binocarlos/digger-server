@@ -10,6 +10,10 @@ function Server(){
 	this.api.on('request', function(type, req){
 		self.emit('request', type, req)
 	})
+
+	this.api.on('event', function(type, name, data){
+		self.emit('event', type, name, data)
+	})
 }
 
 util.inherits(Server, EventEmitter)
@@ -18,7 +22,10 @@ util.inherits(Server, EventEmitter)
 // req & res should be in object mode
 Server.prototype.reception = function(req, res){
 	var self = this;
-	
+
+	this.emit('reception', req)
+
+	req.headers['x-base-request'] = true
 	var stream = self.api.getHandler(req)
 
 	if(!stream || typeof(stream)=='string'){
@@ -38,8 +45,13 @@ Server.prototype.handler = function(){
 	return this.reception.bind(this)
 }
 
-Server.prototype.use = function(route, supplier){
-	this.api.warehouse.use(route, supplier)
+Server.prototype.warehouse = function(supplier){
+	this.api.setWarehouse(supplier)
+	return this
+}
+
+Server.prototype.access = function(fn){
+	this.api.setAccess(fn)
 	return this
 }
 

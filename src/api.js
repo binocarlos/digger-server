@@ -29,23 +29,57 @@ module.exports = function(){
 		api.emit('request', 'ship', req)
 	})
 
+	shipper.on('event', function(name, data){
+		api.emit('event', 'ship', name, data)
+	})
+
 	streamer.on('request', function(req){
 		api.emit('request', 'stream', req)
+	})
+
+	streamer.on('event', function(name, data){
+		api.emit('event', 'stream', name, data)
 	})
 
 	selector.on('request', function(req){
 		api.emit('request', 'select', req)
 	})
 
+	selector.on('event', function(name, data){
+		api.emit('event', 'select', name, data)
+	})
+
 	warehouse.on('request', function(req){
 		api.emit('request', 'warehouse', req)
+	})
+
+	warehouse.on('event', function(name, data){
+		api.emit('event', 'warehouse', name, data)
 	})
 
 	var methods = {
 		'ship':shipper,
 		'stream':streamer,
-		'select':selector,
-		'warehouse':warehouse
+		'select':selector
+	}
+
+	var supplier
+	var accessfn
+
+	api.setWarehouse = function(supplier){
+		warehouse.setSupplier(supplier)
+	}
+
+	api.setAccess = function(fn){
+		warehouse.setAccess(fn)
+	}
+
+	api.getSelectStreamFactory = function(req){
+		return warehouse.getSelectStreamFactory(req)
+	}
+
+	api.getReadAccessStream = function(req){
+		return warehouse.getReadAccessStream(req)
 	}
 
 	api.getHandler = function(req){
@@ -53,12 +87,12 @@ module.exports = function(){
 			req.url = req.url.substr(utils.urls.base.length)
 		}
 		var method = req.url.split('/')[1]
-		var fn = methods[method] || methods.warehouse
+		var fn = methods[method] || warehouse
 		return fn.handler(req)
 	}
 
 	api.convert = ConvertContract(api)
-	api.warehouse = methods.warehouse
+	api.warehouse = warehouse
 
 	return api
 }

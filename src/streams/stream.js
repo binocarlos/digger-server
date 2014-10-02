@@ -19,7 +19,15 @@ module.exports = function(api){
 
 		tools.recurseStreamContract(contract)
 
-		return req.pipe(api.convert(contract))
+		streamWarehouse.emit('event', 'contract', contract)
+
+		return req
+			.pipe(through.obj(function(chunk, enc, next){
+				streamWarehouse.emit('event', 'input', chunk)
+				this.push(chunk)
+				next()
+			}))
+			.pipe(api.convert(contract))
 	}
 
 	return streamWarehouse

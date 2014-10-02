@@ -11,6 +11,7 @@ module.exports = function(api){
 		// create a streamworks
 		if(req.url==utils.urls.merge || req.url==utils.urls.pipe){
 			var streams = req.body.map(function(c){
+				c.headers['x-digger-user'] = req.headers['x-digger-user']
 				return factory(c)
 			})
 
@@ -32,7 +33,8 @@ module.exports = function(api){
 
 			delete(req.body)
 
-			var stream = api.getHandler(req)
+			// we are gonna hook up the pipe
+			var stream = api.getHandler(req, true)
 
 			// create a fake pipe with the source data ignoring the input
 			if(body){

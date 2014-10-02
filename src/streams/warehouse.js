@@ -1,21 +1,117 @@
 var through = require('through2')
-var Router = require('routes')
 var Selector = require('digger-selector')
 var from = require('from2-array')
 var EventEmitter = require('events').EventEmitter
+var util = require('util')
+
+function Warehouse(){
+	EventEmitter.call(this)
+}
+
+util.inherits(Warehouse, EventEmitter)
+
+module.exports = Warehouse
+
+// return a generic stream that auto loads the supplier for each input
+Warehouse.prototype.handler = function(req){
+	var self = this;
+
+	if(!this._supplier){
+		throw new Error('error - there is no supplier given to the digger-server')
+	}
+
+	return this._wrappedsupplier(req)
+}
+
+Warehouse.prototype.setSupplier = function(supplier){
+	this._supplier = supplier
+	this._wrappedsupplier = this.wrapSupplier(supplier)
+}
+
+
+Warehouse.prototype.setAccess = function(fn){
+	this._access = fn
+}
+
+Warehouse.prototype.checkAccess = function(path, user, mode, done){
+	if(!this._access){
+		return done()
+	}
+	this._access(path, user, mode, done)
+}
 
 /*
 
-	wrap a supplier object to handle HTTP type requests
+	check access for the originating url letting chunks through if it passes
 	
 */
-function wrapsupplier(supplier){
+Warehouse.prototype.getWriteAccessStream = function(req){
+	
+	var checkedAccess = false
+	var hasAccess = false
 
-	return function(req){
-
-		if(typeof(supplier)=='function'){
-			return supplier(req)
+	// a stream that we can return right away that runs the single url via access control
+	var accessStream = through.obj(function(chunk, enc, next){
+		var s = this
+		if(checkedAccess){
+			if(hasAccess){
+				s.push(chunk)
+			}
+			next()
 		}
+		else{
+			self.checkAccess(req.url, req.headers['x-digger-user'], 'write', function(err){
+				checkedAccess = true
+				if(!err){
+					hasAccess = true
+					s.push(chunk)
+				}
+				next()
+			})
+		}
+	})
+
+	return accessStream
+}
+
+/*
+
+	check access for each incoming chunk (which is expected to be a string i.e. the path)
+	
+*/
+Warehouse.prototype.getReadAccessStream = function(req){
+	var self = this;
+
+	// a stream that we can return right away that runs the single url via access control
+	var accessStream = through.obj(function(chunk, enc, next){
+		var s = this
+		if(chunk._digger.path){
+			checkpath = [chunk._digger.path, chunk._digger.inode].join('/')
+		}
+		else{
+			checkpath = '/'
+		}
+		self.checkAccess(checkpath, req.headers['x-digger-user'], 'read', function(err){
+			if(!err){
+				s.push(chunk)
+			}
+			next()
+		})
+	})
+
+	return accessStream
+}
+
+Warehouse.prototype.getSelectStreamFactory = function(selector, laststep){
+	if(!this._supplier){
+		throw new Error('error - there is no supplier given to the digger-server')
+	}
+	return this._supplier.select(selector, laststep)
+}
+
+Warehouse.prototype.wrapSupplier = function(supplier){
+	var self = this;
+	return function(req){
 
 		// Expect no input
 		if(req.method=='get'){
@@ -42,88 +138,38 @@ function wrapsupplier(supplier){
 				feedurl = ''
 			}
 
-			req.headers['x-digger-selector'] = selector
-			req.headers['x-digger-laststep'] = true
+			var queryStreamFactory = supplier.select(selector, true)
 
-			var queryStreamFn = supplier.select(req)
-			return queryStreamFn(feedurl)
+			var accessStream = self.getReadAccessStream(req)
+			var queryStream = queryStreamFactory(feedurl)	
+
+			return queryStream.pipe(accessStream)
 		}
-		else if(req.method=='post'){
-			if(req.url.indexOf('/_select/')==0){
-				req.url = req.url.substr('/_select'.length)
-				var selector = req.headers['x-digger-selector']
+		else{
 
-				// supplier select returns function(path) which returns a stream
-				return supplier.select(req)
+			var accessStream = self.getWriteAccessStream(req)
+			var supplierStream
+
+			if(req.method=='post'){
+				if(req.headers['x-base-request']){
+					req.pipe(accessStream)
+				}
+				supplierStream = supplier.append(req)	
 			}
-			else{
-				return supplier.append(req)	
+			else if(req.method=='put'){
+				if(req.headers['x-base-request']){
+					req.pipe(accessStream)
+				}
+				supplierStream = supplier.save(req)	
 			}
-			
-		}
-		else if(req.method=='put'){
-			return supplier.save(req)	
-		}
-		else if(req.method=='delete'){
-			return supplier.remove(req)	
+			else if(req.method=='delete'){
+				supplierStream = supplier.remove(req)	
+			}
+
+			return accessStream.pipe(supplierStream)
 		}
 	}
 }
-
-var EventEmitter = require('events').EventEmitter
-var util = require('util')
-
-function Warehouse(){
-	EventEmitter.call(this)
-	this._router = new Router()
-}
-
-util.inherits(Warehouse, EventEmitter)
-
-module.exports = Warehouse
-
-Warehouse.prototype.handler = function(req){
-
-	var checkURL = req.url
-
-	if(checkURL.indexOf('/_select/')==0){
-		checkURL = checkURL.substr('/_select'.length)
-	}
-	var match = this._router.match(checkURL);
-
-	if(match){
-		this.emit('request', req)
-		return match.fn(req)
-	}
-	else{
-		return null
-	}
-}
-
-Warehouse.prototype.resolve = function(route){
-	var match = this._router.match(route || '/')
-	return match ? match.route : '/'
-}
-
-Warehouse.prototype.use = function(route, supplier){
-	if(!supplier){
-		supplier = route;
-		route = null;
-	}
-
-	supplier = wrapsupplier(supplier)
-
-	if(!route){
-		route = '/*'
-	}
-
-	if(!route.match(/\/\*$/)){
-		route = route + '/*'
-	}
-
-	this._router.addRoute(route, supplier)
-}
-
 
 module.exports = function(){
 

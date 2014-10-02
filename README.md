@@ -30,7 +30,12 @@ var supplier = diggerlevel(leveldb)
 var digger = diggerserver()
 
 // mount the level supplier onto the server
-digger.use(supplier)
+digger.warehouse(supplier)
+
+// access control
+digger.access(function(path, user, mode, next){
+	next()	
+})
 
 // create a HTTP server to host it
 var server = http.createServer(digger.handler())

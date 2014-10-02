@@ -14,13 +14,21 @@ module.exports = function(api){
 		var res = through.obj()
 		
 		// collect the contract which is the body of the request
-		req.pipe(concat(function(contract){
+		req
+			.pipe(through.obj(function(chunk, enc, next){
+				shipper.emit('event', 'input', chunk)
+				this.push(chunk)
+				next()
+			}))
+			.pipe(concat(function(contract){
 
-			// now we have the contract as POJO we can turn it into a stream
-			// and pipe the output to the res
-			api.convert(contract[0]).pipe(res)
+				contract[0].headers['x-digger-user'] = req.headers['x-digger-user']
 
-		}))
+				// now we have the contract as POJO we can turn it into a stream
+				// and pipe the output to the res
+				api.convert(contract[0]).pipe(res)
+
+			}))
 
 		return res
 	}
