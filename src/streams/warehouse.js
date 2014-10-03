@@ -46,7 +46,7 @@ Warehouse.prototype.checkAccess = function(path, user, mode, done){
 	
 */
 Warehouse.prototype.getWriteAccessStream = function(req){
-	
+	var self = this;
 	var checkedAccess = false
 	var hasAccess = false
 
@@ -85,12 +85,17 @@ Warehouse.prototype.getReadAccessStream = function(req){
 	// a stream that we can return right away that runs the single url via access control
 	var accessStream = through.obj(function(chunk, enc, next){
 		var s = this
-		if(chunk._digger.path){
+		var checkpath
+		if(typeof(chunk)=='string'){
+			checkpath = chunk
+		}
+		else if(chunk._digger && chunk._digger.path){
 			checkpath = [chunk._digger.path, chunk._digger.inode].join('/')
 		}
 		else{
 			checkpath = '/'
 		}
+		
 		self.checkAccess(checkpath, req.headers['x-digger-user'], 'read', function(err){
 			if(!err){
 				s.push(chunk)
@@ -145,6 +150,20 @@ Warehouse.prototype.wrapSupplier = function(supplier){
 
 			return queryStream.pipe(accessStream)
 		}
+		// Expect no input
+		else if(req.method=='delete'){
+
+			var accessStream = self.getWriteAccessStream(req)
+			var sourceStream = from.obj([
+				req.url
+			])
+			var deleteStream = supplier.remove(req)
+
+			return sourceStream
+				.pipe(accessStream)
+				.pipe(deleteStream)
+		}
+		// we have an input stream
 		else{
 
 			var accessStream = self.getWriteAccessStream(req)
@@ -162,10 +181,7 @@ Warehouse.prototype.wrapSupplier = function(supplier){
 				}
 				supplierStream = supplier.save(req)	
 			}
-			else if(req.method=='delete'){
-				supplierStream = supplier.remove(req)	
-			}
-
+			
 			return accessStream.pipe(supplierStream)
 		}
 	}

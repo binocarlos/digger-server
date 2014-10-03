@@ -35,14 +35,17 @@ module.exports = function(api){
 		// query is a single function that accepts a container url
 		// it returns a stream for that single query
 		var streamFactory = api.getSelectStreamFactory(selector, laststep)
-		var accessStream = api.getReadAccessStream(req)
 		var filter = uniqueFilter()
+
+		selectorWarehouse.emit('event', 'selector', selector.string)
 
 		return through.obj(function(chunk, enc, nextinput){
 			var self = this;
 
+			selectorWarehouse.emit('event', 'input', chunk)
+
 			streamFactory(chunk)
-				.pipe(accessStream)
+				.pipe(api.getReadAccessStream(req))
 				.pipe(through.obj(function(chunk, enc, cb){
 					if(filter(chunk)){
 						self.push(chunk)	

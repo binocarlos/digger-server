@@ -113,6 +113,54 @@ describe('diggerserver', function(){
 
     })
 
+    it('run a delete query with a stub warehouse', function(done){
+
+      var digger = Server();
+      var client = Client();
+
+      digger.warehouse({
+        select:function(selector, laststep){
+
+          selector.string.should.equal('thing')
+          return function(path){
+
+            path.should.equal('/apples')
+
+            return from.obj([{
+              _digger:{
+                path:'/apples/red',
+                inode:'bigred',
+                tag:'fruit',
+                class:['red']
+              },
+              name:'test'
+            }])
+
+          }
+        },
+        remove:function(req){
+          return through.obj(function(chunk, env, cb){
+
+            chunk.should.equal('/apples/red/bigred')
+
+            cb()
+          })
+        }
+      })
+
+      client.on('request', digger.reception.bind(digger));
+
+      var warehouse = client.connect('/apples');
+
+      warehouse('thing').ship(function(results){
+        results.remove().ship(function(delresults){
+          
+          done()
+        })
+        
+      })
+
+    })
 
     it('run a direct query', function(done){
 

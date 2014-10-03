@@ -43,5 +43,54 @@ var server = http.createServer(digger.handler())
 server.listen(80)
 ```
 
+## notes
+
+The digger server accepts HTTP requests that have been converted to JSON objects.
+
+A digger `req` is a read-stream in object mode with the following properties:
+
+```js
+{
+	method:'get',
+	headers:{
+		'x-digger-selector':'folder.red'
+	},
+	url:'/apples'
+}
+```
+
+#### raw requests
+
+You can convert raw HTTP requests using [digger-http](https://github.com/binocarlos/digger-http).
+
+#### endpoints
+
+Here are the notable endpoints:
+
+ * POST /digger/ship - callback based contracts
+ * POST /digger/stream - stream based contracts
+ * POST /digger/select - selector resolving
+ * * /* - warehouse
+
+The first 3 are used for contract resolving - a contract is a complicated multi-step selector / append / save / delete request.
+
+#### ship
+
+The ship endpoint accepts a contract as its POST data and expects the body of each contract to be present.
+
+#### stream
+
+The stream endpoint accepts a contract in its x-digger-contract header and will stream the requests input to that contract.
+
+#### select
+
+This creates selector streams for each of the selector stages and pipes them accordingly.
+
+The input is not JSON packets but context paths.
+
+#### warehouse
+
+This is the REST controller back to the storage engine - you can call standard HTTP on this (for example to load a single container just GET its url)
+
 ## licence
 MIT

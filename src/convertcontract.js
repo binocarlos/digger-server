@@ -11,6 +11,7 @@ module.exports = function(api){
 		// create a streamworks
 		if(req.url==utils.urls.merge || req.url==utils.urls.pipe){
 			var streams = req.body.map(function(c){
+				c.headers = c.headers || {}
 				c.headers['x-digger-user'] = req.headers['x-digger-user']
 				return factory(c)
 			})

@@ -74,8 +74,8 @@ module.exports = function(){
 		warehouse.setAccess(fn)
 	}
 
-	api.getSelectStreamFactory = function(req){
-		return warehouse.getSelectStreamFactory(req)
+	api.getSelectStreamFactory = function(selector, laststep){
+		return warehouse.getSelectStreamFactory(selector, laststep)
 	}
 
 	api.getReadAccessStream = function(req){
